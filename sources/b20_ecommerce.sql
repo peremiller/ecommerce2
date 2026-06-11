@@ -272,6 +272,35 @@ ALTER TABLE `orders_items`
 --
 ALTER TABLE `users`
   ADD CONSTRAINT `users_fk0` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
+
+--
+-- Seed data for lookup tables
+--
+
+INSERT INTO `roles` (`id`, `name`) VALUES
+(1, 'admin'),
+(2, 'customer');
+
+INSERT INTO `statuses` (`id`, `name`) VALUES
+(1, 'pending'),
+(2, 'confirmed'),
+(3, 'shipped'),
+(4, 'delivered'),
+(5, 'cancelled');
+
+INSERT INTO `payment_modes` (`id`, `name`) VALUES
+(1, 'cash on delivery'),
+(2, 'credit card'),
+(3, 'debit card'),
+(4, 'paypal');
+
+INSERT INTO `categories` (`id`, `name`) VALUES
+(1, 'electronics'),
+(2, 'clothing'),
+(3, 'home & garden'),
+(4, 'sports & outdoors'),
+(5, 'books');
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
