@@ -4,7 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This repository is a database schema source for a PHP/MySQL ecommerce application. The only runnable artifact is a MySQL dump at `sources/b20_ecommerce.sql`. There is no application code here — the `app/` directory was intended as a git submodule but has no `.gitmodules` config, so it is an untracked orphan entry in git.
+This repository contains:
+
+- `index.html` — a self-contained ecommerce web app ("B20 Shop") that implements the b20_ecommerce schema entirely client-side (vanilla JS + localStorage, no build step). It is served via GitHub Pages at https://peremiller.github.io/ecommerce2/. Demo accounts: `admin / admin123` (admin) and `demo / demo123` (customer). Passwords are demo-grade only — do not reuse this auth pattern for real credentials.
+- `sources/b20_ecommerce.sql` — the original MySQL dump the app's data model mirrors (tables: roles, statuses, payment_modes, categories, items, users, orders, orders_items). The `app/` directory was intended as a git submodule but has no `.gitmodules` config, so it is an untracked orphan entry in git.
+
+The web app follows the schema faithfully: `orders_items.price` snapshots price at purchase time, `orders.transaction_code` is a unique 12-char code, usernames/emails are unique, and lookup values (roles, statuses, payment modes, categories) match the SQL seed rows.
 
 ## Database Setup
 

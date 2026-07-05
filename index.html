@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>B20 Shop — ecommerce2</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --ink:#16181d; --muted:#6b7280; --line:#e5e7eb;
+  --brand:#2563eb; --brand-soft:#dbeafe; --ok:#059669; --warn:#d97706; --bad:#dc2626;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04); --radius:14px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0e1014; --card:#171a21; --ink:#e8eaed; --muted:#9aa0aa; --line:#262b34;
+  --brand:#3b82f6; --brand-soft:#172554; --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+  --shadow:0 1px 3px rgba(0,0,0,.5);
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+.topbar{display:flex;align-items:center;gap:10px;padding:14px 16px;font-weight:700;font-size:18px;
+  position:sticky;top:0;background:var(--bg);z-index:20;}
+.topbar .spacer{flex:1}
+.topbar .who{font-size:12px;font-weight:600;color:var(--muted)}
+.tabs{display:flex;gap:6px;padding:0 12px 10px;overflow-x:auto;position:sticky;top:52px;
+  background:var(--bg);z-index:19;}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;
+  padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;}
+.tab.on{background:var(--brand);border-color:var(--brand);color:#fff;}
+.tab .badge{background:var(--bad);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:4px;}
+.tab.on .badge{background:#fff;color:var(--brand);}
+.screen{padding:12px 16px 110px;max-width:860px;margin:0 auto;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:14px;margin-bottom:10px;}
+.btn{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 14px;
+  font-weight:600;cursor:pointer;font-size:14px;}
+.btn.ghost{background:transparent;color:var(--brand);border:1px solid var(--brand);}
+.btn.sm{padding:6px 10px;font-size:12px;border-radius:8px;}
+.btn.danger{background:var(--bad);}
+.btn:disabled{opacity:.5;cursor:default;}
+.muted{color:var(--muted)}
+.icon{background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px;padding:6px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.item-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:12px;display:flex;flex-direction:column;gap:6px;cursor:pointer;}
+.item-emoji{font-size:40px;line-height:1;text-align:center;padding:14px 0;
+  background:var(--bg);border-radius:10px;}
+.item-name{font-weight:600;font-size:14px;}
+.item-cat{font-size:11px;color:var(--muted);text-transform:capitalize;}
+.item-price{font-weight:700;font-size:15px;}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;
+  padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;text-transform:capitalize;}
+.chip.on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand);}
+.search{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--card);color:var(--ink);margin-bottom:10px;font-size:14px;}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.qty{display:flex;align-items:center;gap:8px;}
+.qty button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
+  background:var(--card);color:var(--ink);font-size:16px;cursor:pointer;font-weight:700;}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;
+  text-transform:capitalize;border:1px solid transparent;}
+.st-pending{background:var(--brand-soft);color:var(--brand);}
+.st-confirmed{background:rgba(217,119,6,.12);color:var(--warn);}
+.st-shipped{background:rgba(37,99,235,.12);color:var(--brand);}
+.st-delivered{background:rgba(5,150,105,.12);color:var(--ok);}
+.st-cancelled{background:rgba(220,38,38,.12);color:var(--bad);}
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;
+  justify-content:center;z-index:50;}
+.modal{width:100%;max-width:480px;background:var(--card);border:1px solid var(--line);
+  border-radius:18px 18px 0 0;padding:18px;position:relative;max-height:90vh;overflow:auto;}
+@media(min-width:520px){.backdrop{align-items:center}.modal{border-radius:18px}}
+.modal h3{margin:0 0 10px;}
+.modal label{display:block;margin:10px 0 0;font-size:13px;color:var(--muted);}
+.modal input,.modal select,.modal textarea{width:100%;margin-top:4px;padding:9px;
+  border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-size:14px;}
+.modal .close{position:absolute;top:10px;right:10px;}
+.fab{position:fixed;right:16px;bottom:16px;z-index:40;border:0;cursor:pointer;
+  background:var(--brand);color:#fff;font-weight:700;border-radius:999px;padding:14px 18px;
+  box-shadow:var(--shadow);font-size:14px;}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(10px);
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;
+  opacity:0;transition:.25s;z-index:60;pointer-events:none;}
+.toast.show{opacity:.96;transform:translateX(-50%) translateY(0);}
+.empty{text-align:center;padding:40px 0;}
+.total-bar{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:16px;
+  padding:12px 0;}
+.tx{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted);}
+table.mini{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
+table.mini td{padding:4px 0;border-top:1px solid var(--line);}
+table.mini td:last-child{text-align:right;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<button id="fab" class="fab" style="display:none">+</button>
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+<script>
+"use strict";
+/* B20 Shop — client-side implementation of the b20_ecommerce schema.
+   Tables: roles, statuses, payment_modes, categories, items, users, orders, orders_items.
+   Persistence: localStorage (demo app — passwords are NOT securely hashed). */
+
+const LS = "b20shop.v1";
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc = s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = n=>"$"+Number(n||0).toFixed(2);
+const fmtDT = iso=>{ if(!iso) return ""; const d=new Date(iso);
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})+" "+
+         d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}); };
+function toast(m){const r=$("#toastRoot"),e=document.createElement("div");e.className="toast";
+  e.textContent=m;r.appendChild(e);requestAnimationFrame(()=>e.classList.add("show"));
+  setTimeout(()=>{e.classList.remove("show");setTimeout(()=>e.remove(),250);},2200);}
+// demo-grade obfuscation only — never use for real credentials
+function pwHash(p){let h=5381;for(let i=0;i<p.length;i++){h=((h<<5)+h+p.charCodeAt(i))|0;}return "h"+(h>>>0).toString(36);}
+function txCode(){ // unique 12-char transaction code (orders.transaction_code varchar(12))
+  const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let c;
+  do{ c=Array.from({length:12},()=>A[Math.floor(Math.random()*A.length)]).join(""); }
+  while(state.orders.some(o=>o.transaction_code===c));
+  return c;
+}
+function nextId(rows){ return rows.reduce((m,r)=>Math.max(m,r.id),0)+1; }
+
+/* ---------- seed (lookup values verbatim from sources/b20_ecommerce.sql) ---------- */
+function seed(){
+  const roles=[{id:1,name:"admin"},{id:2,name:"customer"}];
+  const statuses=[{id:1,name:"pending"},{id:2,name:"confirmed"},{id:3,name:"shipped"},
+                  {id:4,name:"delivered"},{id:5,name:"cancelled"}];
+  const payment_modes=[{id:1,name:"cash on delivery"},{id:2,name:"credit card"},
+                       {id:3,name:"debit card"},{id:4,name:"paypal"}];
+  const categories=[{id:1,name:"electronics"},{id:2,name:"clothing"},{id:3,name:"home & garden"},
+                    {id:4,name:"sports & outdoors"},{id:5,name:"books"}];
+  const items=[
+    {id:1, name:"Wireless Headphones", price:79.99, description:"Over-ear Bluetooth headphones, 30h battery.", image_path:"img/headphones.png", emoji:"🎧", category_id:1},
+    {id:2, name:"Smart Watch",         price:129.00,description:"Fitness tracking, notifications, 7-day battery.", image_path:"img/watch.png", emoji:"⌚", category_id:1},
+    {id:3, name:"USB-C Charger 65W",   price:24.50, description:"GaN fast charger with two ports.", image_path:"img/charger.png", emoji:"🔌", category_id:1},
+    {id:4, name:"Classic T-Shirt",     price:14.99, description:"100% cotton crew-neck tee.", image_path:"img/tshirt.png", emoji:"👕", category_id:2},
+    {id:5, name:"Denim Jacket",        price:59.00, description:"Mid-wash denim jacket, unisex fit.", image_path:"img/jacket.png", emoji:"🧥", category_id:2},
+    {id:6, name:"Running Sneakers",    price:89.95, description:"Lightweight cushioned running shoes.", image_path:"img/sneakers.png", emoji:"👟", category_id:2},
+    {id:7, name:"Ceramic Plant Pot",   price:18.75, description:"Matte ceramic pot with drainage tray, 6 in.", image_path:"img/pot.png", emoji:"🪴", category_id:3},
+    {id:8, name:"LED Desk Lamp",       price:32.00, description:"Dimmable lamp with 3 color temperatures.", image_path:"img/lamp.png", emoji:"💡", category_id:3},
+    {id:9, name:"Garden Tool Set",     price:45.99, description:"5-piece stainless set with canvas bag.", image_path:"img/tools.png", emoji:"🧰", category_id:3},
+    {id:10,name:"Yoga Mat",            price:27.99, description:"Non-slip 6 mm mat with carry strap.", image_path:"img/yogamat.png", emoji:"🧘", category_id:4},
+    {id:11,name:"Camping Tent (2P)",   price:119.00,description:"Waterproof two-person dome tent.", image_path:"img/tent.png", emoji:"⛺", category_id:4},
+    {id:12,name:"Football",            price:21.50, description:"Size 5 match-quality ball.", image_path:"img/football.png", emoji:"⚽", category_id:4},
+    {id:13,name:"The Pragmatic Coder", price:34.99, description:"Hardcover, 352 pages on software craft.", image_path:"img/book1.png", emoji:"📘", category_id:5},
+    {id:14,name:"Cookbook: 100 Meals", price:26.00, description:"Everyday recipes with photos.", image_path:"img/book2.png", emoji:"📗", category_id:5},
+    {id:15,name:"Sci-Fi Anthology",    price:19.99, description:"12 award-winning short stories.", image_path:"img/book3.png", emoji:"📙", category_id:5},
+  ];
+  const users=[
+    {id:1,firstname:"Site",lastname:"Admin",username:"admin",password:pwHash("admin123"),
+     email:"admin@b20shop.test",address:"1 Admin Way",role_id:1},
+    {id:2,firstname:"Demo",lastname:"Customer",username:"demo",password:pwHash("demo123"),
+     email:"demo@b20shop.test",address:"42 Sample St, Las Piñas",role_id:2},
+  ];
+  return {seeded:true,roles,statuses,payment_modes,categories,items,users,
+          orders:[],orders_items:[],cart:[],session:null};
+}
+function normalize(s){
+  s=s||{};
+  const d=seed();
+  for(const k of ["roles","statuses","payment_modes","categories","items","users","orders","orders_items","cart"])
+    s[k]=Array.isArray(s[k])?s[k]:d[k]||[];
+  if(!s.roles.length)s.roles=d.roles;
+  if(!s.statuses.length)s.statuses=d.statuses;
+  if(!s.payment_modes.length)s.payment_modes=d.payment_modes;
+  if(!s.categories.length)s.categories=d.categories;
+  s.session=s.session||null;
+  return s;
+}
+function boot(){
+  try{const r=localStorage.getItem(LS);if(r)return normalize(JSON.parse(r));}catch(e){}
+  return normalize(seed());
+}
+let state=boot();
+localStorage.setItem(LS,JSON.stringify(state));
+function save(){localStorage.setItem(LS,JSON.stringify(state));}
+
+/* ---------- lookups ---------- */
+const catName =id=>(state.categories.find(c=>c.id===id)||{}).name||"";
+const stName  =id=>(state.statuses.find(s=>s.id===id)||{}).name||"";
+const pmName  =id=>(state.payment_modes.find(p=>p.id===id)||{}).name||"";
+const roleName=id=>(state.roles.find(r=>r.id===id)||{}).name||"";
+const me=()=>state.users.find(u=>u.id===state.session)||null;
+const isAdmin=()=>{const u=me();return !!u&&roleName(u.role_id)==="admin";};
+const cartCount=()=>state.cart.reduce((n,l)=>n+l.quantity,0);
+
+/* ---------- routing ---------- */
+let view="shop", shopCat=0, shopQ="";
+function go(v){view=v;render();}
+
+function render(){
+  const u=me();
+  const tabs=[["shop","Shop"],["cart",`Cart${cartCount()?` <span class="badge">${cartCount()}</span>`:""}`],
+              ["orders","Orders"]];
+  if(isAdmin())tabs.push(["admin","Admin"]);
+  tabs.push(["account",u?"Account":"Sign in"]);
+  $("#app").innerHTML=`
+    <header class="topbar">🛍️ B20 Shop
+      <span class="spacer"></span>
+      <span class="who">${u?esc(u.firstname)+" ("+esc(roleName(u.role_id))+")":"guest"}</span>
+    </header>
+    <nav class="tabs">${tabs.map(([k,l])=>
+      `<button class="tab ${view===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</nav>
+    <main class="screen">${
+      view==="shop"?renderShop():
+      view==="cart"?renderCart():
+      view==="orders"?renderOrders():
+      view==="admin"?renderAdmin():
+      renderAccount()}</main>`;
+  wire();renderFab();
+}
+
+/* ---------- shop ---------- */
+function renderShop(){
+  const cats=[{id:0,name:"all"},...state.categories];
+  let items=state.items;
+  if(shopCat)items=items.filter(i=>i.category_id===shopCat);
+  if(shopQ){const q=shopQ.toLowerCase();
+    items=items.filter(i=>i.name.toLowerCase().includes(q)||(i.description||"").toLowerCase().includes(q));}
+  return `
+    <input class="search" id="q" placeholder="Search products…" value="${esc(shopQ)}">
+    <div class="chips">${cats.map(c=>
+      `<button class="chip ${shopCat===c.id?"on":""}" data-cat="${c.id}">${esc(c.name)}</button>`).join("")}</div>
+    ${items.length?`<div class="grid">${items.map(i=>`
+      <div class="item-card" data-item="${i.id}">
+        <div class="item-emoji">${esc(i.emoji||"📦")}</div>
+        <div class="item-name">${esc(i.name)}</div>
+        <div class="item-cat">${esc(catName(i.category_id))}</div>
+        <div class="row"><span class="item-price">${money(i.price)}</span>
+          <button class="btn sm" data-add="${i.id}">Add</button></div>
+      </div>`).join("")}</div>`
+    :`<p class="muted empty">No products match.</p>`}`;
+}
+function itemModal(i){
+  openModal(`
+    <div class="item-emoji" style="font-size:56px">${esc(i.emoji||"📦")}</div>
+    <h3 style="margin-top:10px">${esc(i.name)}</h3>
+    <p class="muted" style="margin:4px 0 2px;text-transform:capitalize">${esc(catName(i.category_id))}</p>
+    <p>${esc(i.description||"")}</p>
+    <div class="row"><span class="item-price" style="font-size:20px">${money(i.price)}</span>
+      <button class="btn" id="m-add">Add to cart</button></div>`);
+  $("#m-add").onclick=()=>{addToCart(i.id);closeModal();};
+}
+function addToCart(itemId){
+  const line=state.cart.find(l=>l.item_id===itemId);
+  if(line)line.quantity++;else state.cart.push({item_id:itemId,quantity:1});
+  save();render();toast("Added to cart");
+}
+
+/* ---------- cart & checkout ---------- */
+function renderCart(){
+  if(!state.cart.length)return `<p class="muted empty">Your cart is empty.<br>Browse the Shop tab to add products.</p>`;
+  const rows=state.cart.map(l=>{
+    const i=state.items.find(x=>x.id===l.item_id);
+    if(!i)return "";
+    return `<div class="card row">
+      <div style="display:flex;gap:10px;align-items:center">
+        <span style="font-size:26px">${esc(i.emoji||"📦")}</span>
+        <div><div class="item-name">${esc(i.name)}</div>
+          <div class="muted" style="font-size:12px">${money(i.price)} each</div></div>
+      </div>
+      <div class="qty">
+        <button data-dec="${i.id}">−</button><span>${l.quantity}</span>
+        <button data-inc="${i.id}">+</button>
+        <button class="icon" data-rm="${i.id}" aria-label="Remove">✕</button>
+      </div></div>`;}).join("");
+  const total=state.cart.reduce((t,l)=>{
+    const i=state.items.find(x=>x.id===l.item_id);return t+(i?i.price*l.quantity:0);},0);
+  return rows+`
+    <div class="total-bar"><span>Total</span><span>${money(total)}</span></div>
+    <button class="btn" id="checkoutBtn" style="width:100%">Checkout</button>`;
+}
+function checkoutModal(){
+  const u=me();
+  if(!u){toast("Sign in to checkout");view="account";render();return;}
+  const total=state.cart.reduce((t,l)=>{
+    const i=state.items.find(x=>x.id===l.item_id);return t+(i?i.price*l.quantity:0);},0);
+  openModal(`
+    <h3>Checkout</h3>
+    <p class="muted">Ship to: ${esc(u.address||"—")}</p>
+    <label>Payment mode<select id="f-pm">${state.payment_modes.map(p=>
+      `<option value="${p.id}" style="text-transform:capitalize">${esc(p.name)}</option>`).join("")}</select></label>
+    <div class="total-bar"><span>Total</span><span>${money(total)}</span></div>
+    <button class="btn" id="f-place" style="width:100%">Place order</button>`);
+  $("#f-place").onclick=()=>{
+    const order={id:nextId(state.orders),transaction_code:txCode(),user_id:u.id,
+      purchase_date:new Date().toISOString(),status_id:1,payment_mode_id:+$("#f-pm").value};
+    state.orders.push(order);
+    for(const l of state.cart){
+      const i=state.items.find(x=>x.id===l.item_id);if(!i)continue;
+      state.orders_items.push({id:nextId(state.orders_items),order_id:order.id,
+        item_id:i.id,quantity:l.quantity,price:i.price}); // price snapshot at purchase time
+    }
+    state.cart=[];save();closeModal();view="orders";render();
+    toast("Order "+order.transaction_code+" placed");
+  };
+}
+
+/* ---------- orders ---------- */
+function renderOrders(){
+  const u=me();
+  if(!u)return `<p class="muted empty">Sign in to see your orders.</p>`;
+  const mine=state.orders.filter(o=>isAdmin()||o.user_id===u.id)
+    .slice().sort((a,b)=>b.purchase_date.localeCompare(a.purchase_date));
+  if(!mine.length)return `<p class="muted empty">No orders yet.</p>`;
+  return mine.map(o=>{
+    const lines=state.orders_items.filter(x=>x.order_id===o.id);
+    const total=lines.reduce((t,l)=>t+l.price*l.quantity,0);
+    const buyer=state.users.find(x=>x.id===o.user_id)||{};
+    const st=stName(o.status_id);
+    return `<div class="card">
+      <div class="row">
+        <div><span class="tx">#${esc(o.transaction_code)}</span><br>
+          <span class="muted" style="font-size:12px">${fmtDT(o.purchase_date)}
+          ${isAdmin()?" · "+esc(buyer.username||"?"):""}</span></div>
+        <span class="pill st-${esc(st)}">${esc(st)}</span>
+      </div>
+      <table class="mini">${lines.map(l=>{
+        const i=state.items.find(x=>x.id===l.item_id)||{};
+        return `<tr><td>${esc(i.name||"item #"+l.item_id)} × ${l.quantity}</td>
+                <td>${money(l.price*l.quantity)}</td></tr>`;}).join("")}
+        <tr><td><b>Total</b> <span class="muted" style="font-size:11px;text-transform:capitalize">· ${esc(pmName(o.payment_mode_id))}</span></td>
+            <td><b>${money(total)}</b></td></tr></table>
+      ${isAdmin()?`<div class="row" style="margin-top:8px">
+        <select data-st="${o.id}" style="padding:6px;border-radius:8px;border:1px solid var(--line);
+          background:var(--bg);color:var(--ink)">${state.statuses.map(s=>
+          `<option value="${s.id}" ${s.id===o.status_id?"selected":""} style="text-transform:capitalize">${esc(s.name)}</option>`).join("")}</select>
+        </div>`
+      :st==="pending"?`<button class="btn sm danger" data-cancel="${o.id}" style="margin-top:8px">Cancel order</button>`:""}
+    </div>`;}).join("");
+}
+
+/* ---------- admin ---------- */
+function renderAdmin(){
+  if(!isAdmin())return `<p class="muted empty">Admins only.</p>`;
+  const revenue=state.orders.filter(o=>stName(o.status_id)!=="cancelled")
+    .reduce((t,o)=>t+state.orders_items.filter(l=>l.order_id===o.id)
+      .reduce((s,l)=>s+l.price*l.quantity,0),0);
+  return `
+    <div class="card row">
+      <div><b>${state.items.length}</b> <span class="muted">products</span></div>
+      <div><b>${state.orders.length}</b> <span class="muted">orders</span></div>
+      <div><b>${state.users.length}</b> <span class="muted">users</span></div>
+      <div><b>${money(revenue)}</b> <span class="muted">revenue</span></div>
+    </div>
+    <h3 style="margin:14px 2px 8px">Products</h3>
+    ${state.items.map(i=>`<div class="card row">
+      <div style="display:flex;gap:10px;align-items:center">
+        <span style="font-size:24px">${esc(i.emoji||"📦")}</span>
+        <div><div class="item-name">${esc(i.name)}</div>
+          <div class="muted" style="font-size:12px;text-transform:capitalize">
+            ${esc(catName(i.category_id))} · ${money(i.price)}</div></div>
+      </div>
+      <div><button class="btn sm ghost" data-edit="${i.id}">Edit</button>
+        <button class="icon" data-delitem="${i.id}" aria-label="Delete">✕</button></div>
+    </div>`).join("")}`;
+}
+function itemFormModal(existing){
+  const i=existing||{};
+  openModal(`
+    <h3>${existing?"Edit":"Add"} product</h3>
+    <label>Name<input id="f-name" value="${esc(i.name||"")}"></label>
+    <label>Price (USD)<input id="f-price" type="number" step="0.01" min="0" value="${i.price!=null?i.price:""}"></label>
+    <label>Category<select id="f-cat">${state.categories.map(c=>
+      `<option value="${c.id}" ${c.id===i.category_id?"selected":""} style="text-transform:capitalize">${esc(c.name)}</option>`).join("")}</select></label>
+    <label>Emoji (product image)<input id="f-emoji" value="${esc(i.emoji||"📦")}" maxlength="4"></label>
+    <label>Description<textarea id="f-desc" rows="3">${esc(i.description||"")}</textarea></label>
+    <button class="btn" id="f-save" style="margin-top:12px;width:100%">Save</button>`);
+  $("#f-save").onclick=()=>{
+    const name=$("#f-name").value.trim(), price=parseFloat($("#f-price").value);
+    if(!name){toast("Name is required");return;}
+    if(!(price>=0)){toast("Valid price required");return;}
+    const fields={name,price:Math.round(price*100)/100,category_id:+$("#f-cat").value,
+      emoji:$("#f-emoji").value.trim()||"📦",description:$("#f-desc").value.trim()};
+    if(existing)Object.assign(existing,fields);
+    else{
+      const id=nextId(state.items);
+      // image_path is unique in the schema — derive one per product
+      state.items.push({id,image_path:"img/item-"+id+".png",...fields});
+    }
+    save();closeModal();render();toast("Saved");
+  };
+}
+
+/* ---------- account / auth ---------- */
+function renderAccount(){
+  const u=me();
+  if(!u)return `
+    <div class="card">
+      <h3 style="margin:0 0 6px">Sign in</h3>
+      <p class="muted" style="margin:0 0 8px;font-size:13px">
+        Demo accounts — admin: <b>admin / admin123</b> · customer: <b>demo / demo123</b></p>
+      <label class="muted" style="font-size:13px">Username<input class="search" id="l-user" style="margin:4px 0 8px"></label>
+      <label class="muted" style="font-size:13px">Password<input class="search" id="l-pass" type="password" style="margin:4px 0 8px"></label>
+      <div class="row">
+        <button class="btn" id="loginBtn">Sign in</button>
+        <button class="btn ghost" id="regBtn">Create account</button>
+      </div>
+    </div>`;
+  return `
+    <div class="card">
+      <h3 style="margin:0 0 4px">${esc(u.firstname)} ${esc(u.lastname)}</h3>
+      <p class="muted" style="margin:0">@${esc(u.username)} · ${esc(u.email)}<br>
+        Role: ${esc(roleName(u.role_id))}<br>Address: ${esc(u.address||"—")}</p>
+      <div class="row" style="margin-top:12px">
+        <button class="btn ghost" id="editProfileBtn">Edit profile</button>
+        <button class="btn danger" id="logoutBtn">Sign out</button>
+      </div>
+    </div>
+    <div class="card row">
+      <span class="muted" style="font-size:13px">Backup all shop data</span>
+      <span><button class="btn sm ghost" id="exportBtn">Export</button>
+        <button class="btn sm ghost" id="importBtn">Import</button>
+        <input type="file" id="importFile" accept="application/json" hidden></span>
+    </div>`;
+}
+function login(){
+  const un=$("#l-user").value.trim(), pw=$("#l-pass").value;
+  const u=state.users.find(x=>x.username===un||x.email===un);
+  if(!u||u.password!==pwHash(pw)){toast("Wrong username or password");return;}
+  state.session=u.id;save();view="shop";render();toast("Welcome back, "+u.firstname);
+}
+function registerModal(){
+  openModal(`
+    <h3>Create account</h3>
+    <label>First name<input id="r-fn"></label>
+    <label>Last name<input id="r-ln"></label>
+    <label>Username<input id="r-un"></label>
+    <label>Email<input id="r-em" type="email"></label>
+    <label>Address<input id="r-ad"></label>
+    <label>Password<input id="r-pw" type="password"></label>
+    <button class="btn" id="r-save" style="margin-top:12px;width:100%">Create account</button>`);
+  $("#r-save").onclick=()=>{
+    const fn=$("#r-fn").value.trim(),ln=$("#r-ln").value.trim(),un=$("#r-un").value.trim(),
+          em=$("#r-em").value.trim(),ad=$("#r-ad").value.trim(),pw=$("#r-pw").value;
+    if(!fn||!un||!em||!pw){toast("First name, username, email, password required");return;}
+    if(state.users.some(x=>x.username===un)){toast("Username already taken");return;}
+    if(state.users.some(x=>x.email===em)){toast("Email already registered");return;}
+    const u={id:nextId(state.users),firstname:fn,lastname:ln,username:un,
+      password:pwHash(pw),email:em,address:ad,role_id:2};
+    state.users.push(u);state.session=u.id;
+    save();closeModal();view="shop";render();toast("Account created");
+  };
+}
+function profileModal(){
+  const u=me();if(!u)return;
+  openModal(`
+    <h3>Edit profile</h3>
+    <label>First name<input id="p-fn" value="${esc(u.firstname)}"></label>
+    <label>Last name<input id="p-ln" value="${esc(u.lastname)}"></label>
+    <label>Email<input id="p-em" value="${esc(u.email)}"></label>
+    <label>Address<input id="p-ad" value="${esc(u.address||"")}"></label>
+    <button class="btn" id="p-save" style="margin-top:12px;width:100%">Save</button>`);
+  $("#p-save").onclick=()=>{
+    const em=$("#p-em").value.trim();
+    if(!em){toast("Email required");return;}
+    if(state.users.some(x=>x.email===em&&x.id!==u.id)){toast("Email already registered");return;}
+    u.firstname=$("#p-fn").value.trim();u.lastname=$("#p-ln").value.trim();
+    u.email=em;u.address=$("#p-ad").value.trim();
+    save();closeModal();render();toast("Profile saved");
+  };
+}
+
+/* ---------- export / import ---------- */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="b20shop-"+new Date().toISOString().slice(0,10)+".json";
+  a.click();URL.revokeObjectURL(a.href);
+}
+function importJSON(file){
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const data=JSON.parse(r.result);
+    if(!confirm("Replace all current shop data with the imported file?"))return;
+    state=normalize(data);save();render();toast("Imported");
+  }catch(e){toast("Invalid file");}};
+  r.readAsText(file);
+}
+
+/* ---------- modal plumbing ---------- */
+function openModal(html){
+  $("#modalRoot").innerHTML=`<div class="backdrop" id="mBack">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="icon close" id="mClose" aria-label="Close">✕</button>${html}
+    </div></div>`;
+  $("#mBack").onclick=e=>{if(e.target.id==="mBack")closeModal();};
+  $("#mClose").onclick=closeModal;
+}
+function closeModal(){$("#modalRoot").innerHTML="";}
+
+/* ---------- wiring ---------- */
+function wire(){
+  $$("[data-tab]").forEach(b=>b.onclick=()=>go(b.dataset.tab));
+  $$("[data-cat]").forEach(b=>b.onclick=()=>{shopCat=+b.dataset.cat;render();});
+  const q=$("#q");
+  if(q){q.oninput=()=>{shopQ=q.value;
+    const grid=$(".screen");if(grid){/* re-render but keep focus */
+      const pos=q.selectionStart;render();const q2=$("#q");
+      if(q2){q2.focus();q2.setSelectionRange(pos,pos);}}};}
+  $$("[data-item]").forEach(c=>c.onclick=e=>{
+    if(e.target.closest("[data-add]"))return;
+    const i=state.items.find(x=>x.id===+c.dataset.item);if(i)itemModal(i);});
+  $$("[data-add]").forEach(b=>b.onclick=e=>{e.stopPropagation();addToCart(+b.dataset.add);});
+  $$("[data-inc]").forEach(b=>b.onclick=()=>{
+    const l=state.cart.find(x=>x.item_id===+b.dataset.inc);if(l){l.quantity++;save();render();}});
+  $$("[data-dec]").forEach(b=>b.onclick=()=>{
+    const l=state.cart.find(x=>x.item_id===+b.dataset.dec);
+    if(l){l.quantity--;if(l.quantity<=0)state.cart=state.cart.filter(x=>x!==l);save();render();}});
+  $$("[data-rm]").forEach(b=>b.onclick=()=>{
+    state.cart=state.cart.filter(x=>x.item_id!==+b.dataset.rm);save();render();toast("Removed");});
+  $("#checkoutBtn")&&($("#checkoutBtn").onclick=checkoutModal);
+  $$("[data-st]").forEach(sel=>sel.onchange=()=>{
+    const o=state.orders.find(x=>x.id===+sel.dataset.st);
+    if(o){o.status_id=+sel.value;save();render();toast("Status → "+stName(o.status_id));}});
+  $$("[data-cancel]").forEach(b=>b.onclick=()=>{
+    const o=state.orders.find(x=>x.id===+b.dataset.cancel);
+    if(o&&confirm("Cancel this order?")){
+      o.status_id=(state.statuses.find(s=>s.name==="cancelled")||{id:5}).id;
+      save();render();toast("Order cancelled");}});
+  $$("[data-edit]").forEach(b=>b.onclick=()=>{
+    const i=state.items.find(x=>x.id===+b.dataset.edit);if(i)itemFormModal(i);});
+  $$("[data-delitem]").forEach(b=>b.onclick=()=>{
+    const id=+b.dataset.delitem;
+    if(state.orders_items.some(l=>l.item_id===id)){
+      toast("Item has orders — cannot delete (FK constraint)");return;}
+    if(!confirm("Delete this product?"))return;
+    state.items=state.items.filter(x=>x.id!==id);
+    state.cart=state.cart.filter(l=>l.item_id!==id);
+    save();render();toast("Deleted");});
+  $("#loginBtn")&&($("#loginBtn").onclick=login);
+  $("#l-pass")&&($("#l-pass").onkeydown=e=>{if(e.key==="Enter")login();});
+  $("#regBtn")&&($("#regBtn").onclick=registerModal);
+  $("#logoutBtn")&&($("#logoutBtn").onclick=()=>{state.session=null;save();view="shop";render();toast("Signed out");});
+  $("#editProfileBtn")&&($("#editProfileBtn").onclick=profileModal);
+  $("#exportBtn")&&($("#exportBtn").onclick=exportJSON);
+  $("#importBtn")&&($("#importBtn").onclick=()=>$("#importFile").click());
+  $("#importFile")&&($("#importFile").onchange=e=>{
+    if(e.target.files[0])importJSON(e.target.files[0]);e.target.value="";});
+}
+function renderFab(){
+  const fab=$("#fab");
+  if(view==="admin"&&isAdmin()){fab.style.display="";fab.textContent="+ Product";
+    fab.onclick=()=>itemFormModal();}
+  else fab.style.display="none";
+}
+render();
+</script>
+</body>
+</html>
