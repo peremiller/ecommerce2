@@ -16,4 +16,4 @@ Create the production build with:
 npm run build
 ```
 
-The Vite base path is configured for GitHub Pages at `/ecommerce2/`. The repository root contains the current production build; maintainable source lives in `app/`.
+The Vite build uses relative asset paths so the same source can be published on GitHub Pages or another static host. The repository root contains the current production build; maintainable source lives in `app/`.
