@@ -1,0 +1,5 @@
+{
+  "app": "ecommerce2",
+  "limits": "Product browsing, cart and browser-local demo orders work offline. Real payment and delivery services need internet.",
+  "spa": true
+}
