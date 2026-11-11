@@ -275,8 +275,7 @@ export function App() {
   const submitNewsletter = (event) => {
     event.preventDefault();
     if (!newsletterEmail.trim()) return;
-    setNewsletterEmail("");
-    setToast("You’re on the B20 list");
+    setToast("Demo only: no newsletter subscription was sent.");
   };
 
   const placeOrder = (event) => {
@@ -288,14 +287,14 @@ export function App() {
       total: cartTotal,
       items: cartLines.map((line) => ({ id: line.id, name: line.product.name, quantity: line.quantity })),
       customer: form.get("name"),
-      status: "Confirmed",
+      status: "Demo saved",
     };
     setOrders((current) => [newOrder, ...current]);
     setCart([]);
     setCheckoutOpen(false);
     setCartOpen(false);
     setOrdersOpen(true);
-    setToast("Order confirmed");
+    setToast("Demo order saved on this device; no purchase made.");
   };
 
   const signIn = (event) => {
@@ -342,7 +341,7 @@ export function App() {
 
       <nav className="category-nav" aria-label="Product categories">
         {categories.map((category) => (
-          <button key={category} className={activeCategory === category ? "is-active" : ""} onClick={() => chooseCategory(category)}>
+          <button key={category} className={activeCategory === category ? "is-active" : ""} aria-pressed={activeCategory === category} onClick={() => chooseCategory(category)}>
             {category}
           </button>
         ))}
@@ -362,10 +361,10 @@ export function App() {
         </section>
 
         <section className="service-strip" aria-label="Shopping benefits">
-          <div><Truck size={33} /><span><strong>Nationwide delivery</strong><small>Fast and reliable to your door</small></span></div>
-          <div><Package size={33} /><span><strong>Easy returns</strong><small>Hassle-free within 7 days</small></span></div>
-          <div><ShieldCheck size={33} /><span><strong>Secure checkout</strong><small>Protected payments</small></span></div>
-          <div><Headset size={33} /><span><strong>Customer support</strong><small>Here to help, every day</small></span></div>
+          <div><Truck size={33} /><span><strong>Delivery preview</strong><small>No real deliveries arranged</small></span></div>
+          <div><Package size={33} /><span><strong>Sample order history</strong><small>Stored locally in this browser</small></span></div>
+          <div><ShieldCheck size={33} /><span><strong>Demo checkout</strong><small>No payment is collected</small></span></div>
+          <div><Headset size={33} /><span><strong>Practice storefront</strong><small>Explore without ordering</small></span></div>
         </section>
 
         <section className="products-section" ref={productsRef} aria-labelledby="products-title">
@@ -404,14 +403,14 @@ export function App() {
         <section className="newsletter" aria-labelledby="newsletter-title">
           <div className="newsletter-message">
             <EnvelopeSimple size={32} />
-            <span><strong id="newsletter-title">New finds. Better everyday.</strong><small>Get exclusive deals and new arrivals straight to your inbox.</small></span>
+            <span><strong id="newsletter-title">Newsletter signup preview</strong><small>Demo only: no email is submitted or added to a mailing list.</small></span>
           </div>
           <form onSubmit={submitNewsletter}>
             <label className="sr-only" htmlFor="newsletter-email">Email address</label>
             <input id="newsletter-email" type="email" required value={newsletterEmail} onChange={(event) => setNewsletterEmail(event.target.value)} placeholder="Enter your email address" />
-            <button type="submit">Subscribe</button>
+            <button type="submit">Preview signup</button>
           </form>
-          <p><ShieldCheck size={24} /> No spam. Unsubscribe anytime.</p>
+          <p><ShieldCheck size={24} /> Your email stays in this form; nothing is sent.</p>
         </section>
       </main>
 
@@ -457,35 +456,37 @@ export function App() {
             </div>
             <div className="cart-checkout">
               <div><span>Subtotal</span><strong>{formatMoney(cartTotal)}</strong></div>
-              <p>Shipping is calculated at checkout.</p>
-              <button disabled={!cartLines.length} onClick={() => setCheckoutOpen(true)}>Secure checkout <LockKey size={19} /></button>
+              <p>Demo only: no shipping, fulfillment or real payment.</p>
+              <button disabled={!cartLines.length} onClick={() => setCheckoutOpen(true)}>Demo checkout <LockKey size={19} /></button>
             </div>
           </aside>
         </div>
       )}
 
       {checkoutOpen && (
-        <Modal title="Secure checkout" onClose={() => setCheckoutOpen(false)}>
+        <Modal title="Demo checkout" onClose={() => setCheckoutOpen(false)}>
           <form className="checkout-form" onSubmit={placeOrder}>
-            <label>Full name<input name="name" required defaultValue={account?.name || ""} autoComplete="name" /></label>
-            <label>Email address<input name="email" type="email" required autoComplete="email" /></label>
-            <label>Delivery address<textarea name="address" rows="3" required /></label>
-            <label>Payment method<select name="payment"><option>Cash on delivery</option><option>Credit or debit card</option><option>Digital wallet</option></select></label>
+            <p role="note">Practice checkout only. No purchase, payment, delivery, or account is created. Use sample details, not real personal information.</p>
+            <label>Demo customer name<input name="name" required defaultValue={account?.name || ""} autoComplete="off" placeholder="Sample Customer" /></label>
+            <label>Sample email (optional)<input name="email" type="email" autoComplete="off" placeholder="sample@example.com" /></label>
+            <label>Sample delivery address (optional)<textarea name="address" rows="3" autoComplete="off" placeholder="Demo address only" /></label>
+            <label>Simulated payment method<select name="payment"><option>Cash on delivery</option><option>Credit or debit card</option><option>Digital wallet</option></select></label>
             <div className="checkout-total"><span>Total</span><strong>{formatMoney(cartTotal)}</strong></div>
-            <button className="modal-primary" type="submit"><CreditCard size={19} /> Place order</button>
+            <button className="modal-primary" type="submit"><CreditCard size={19} /> Save demo order</button>
           </form>
         </Modal>
       )}
 
       {ordersOpen && (
         <Modal title="Your orders" onClose={() => setOrdersOpen(false)} wide>
+          <p role="note">All entries here are browser-local demonstrations, including older entries marked “Confirmed”. No real order is placed.</p>
           {orders.length ? <div className="orders-list">{orders.map((order) => (
             <article key={order.id}>
               <div><strong>#{order.id}</strong><span>{new Date(order.date).toLocaleDateString("en-PH", { dateStyle: "medium" })}</span></div>
               <div>{order.items.map((item) => <p key={item.id}>{item.name} × {item.quantity}</p>)}</div>
               <footer><span className="status-badge"><Check size={14} /> {order.status}</span><strong>{formatMoney(order.total)}</strong></footer>
             </article>
-          ))}</div> : <div className="drawer-empty"><Receipt size={42} /><h3>No orders yet</h3><p>Your confirmed orders will appear here.</p></div>}
+          ))}</div> : <div className="drawer-empty"><Receipt size={42} /><h3>No orders yet</h3><p>Saved demo orders will appear here.</p></div>}
         </Modal>
       )}
 
