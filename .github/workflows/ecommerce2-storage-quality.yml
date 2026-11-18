@@ -1,0 +1,31 @@
+name: B20 Shop Storage Safety
+
+on:
+  pull_request:
+    paths:
+      - 'app/src/App.jsx'
+      - 'app/src/storage.mjs'
+      - 'app/src/styles.css'
+      - 'app/tests/storage.test.mjs'
+      - '.github/workflows/ecommerce2-storage-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storage-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install dependencies from lockfile
+        run: npm ci --prefix app
+      - name: Run native storage preservation regression tests
+        run: node --test app/tests/storage.test.mjs
+      - name: Build canonical Vite source (review-only, not deployed)
+        run: npm run build --prefix app
