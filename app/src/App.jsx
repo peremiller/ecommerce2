@@ -25,6 +25,8 @@ import {
   X,
 } from "@phosphor-icons/react";
 
+import { readStoredValue, writeStoredValue } from "./storage.mjs";
+
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
 
 const products = [
@@ -111,20 +113,17 @@ const formatMoney = (value) =>
   }).format(value);
 
 function useStoredState(key, initialValue) {
-  const [value, setValue] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem(key);
-      return stored ? JSON.parse(stored) : initialValue;
-    } catch {
-      return initialValue;
-    }
-  });
+  const hydrated = useRef(null);
+  if (hydrated.current === null) hydrated.current = readStoredValue(key, initialValue);
+  const [value, setValue] = useState(hydrated.current.value);
+  const [storageBlocked, setStorageBlocked] = useState(hydrated.current.blocked);
 
   useEffect(() => {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  }, [key, value]);
+    if (storageBlocked) return;
+    if (!writeStoredValue(key, value)) setStorageBlocked(true);
+  }, [key, value, storageBlocked]);
 
-  return [value, setValue];
+  return [value, setValue, storageBlocked];
 }
 
 function IconButton({ label, children, className = "", ...props }) {
@@ -214,10 +213,10 @@ export function App() {
   const productsRef = useRef(null);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
-  const [cart, setCart] = useStoredState("b20shop.cart", demoCart);
-  const [saved, setSaved] = useStoredState("b20shop.saved", []);
-  const [orders, setOrders] = useStoredState("b20shop.orders", []);
-  const [account, setAccount] = useStoredState("b20shop.account", null);
+  const [cart, setCart, cartStorageBlocked] = useStoredState("b20shop.cart", demoCart);
+  const [saved, setSaved, savedStorageBlocked] = useStoredState("b20shop.saved", []);
+  const [orders, setOrders, ordersStorageBlocked] = useStoredState("b20shop.orders", []);
+  const [account, setAccount, accountStorageBlocked] = useStoredState("b20shop.account", null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
@@ -242,6 +241,7 @@ export function App() {
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
   const cartTotal = cartLines.reduce((total, line) => total + line.product.price * line.quantity, 0);
   const overlayOpen = Boolean(selectedProduct || cartOpen || ordersOpen || accountOpen || checkoutOpen);
+  const blockedStorageCount = [cartStorageBlocked, savedStorageBlocked, ordersStorageBlocked, accountStorageBlocked].filter(Boolean).length;
 
   useEffect(() => {
     document.body.style.overflow = overlayOpen ? "hidden" : "";
@@ -313,6 +313,11 @@ export function App() {
 
   return (
     <div className="storefront">
+      {blockedStorageCount > 0 && (
+        <div className="storage-warning" role="alert">
+          Saved data in {blockedStorageCount} browser section{blockedStorageCount === 1 ? "" : "s"} could not be read or saved. Existing browser storage has not been cleared or replaced; changes to affected sections in this tab may not persist. Please preserve your saved data before resetting browser storage.
+        </div>
+      )}
       <header className="site-header">
         <a className="brand" href={import.meta.env.BASE_URL} aria-label="B20 Shop home">
           <img src={`${ASSET_ROOT}/b20-logo.webp`} alt="B20 Shop" />
