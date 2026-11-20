@@ -26,6 +26,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { readStoredValue, writeStoredValue } from "./storage.mjs";
+import { keepModalFocus } from "./modalKeyboard.mjs";
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
 
@@ -150,14 +151,27 @@ function Rating({ product }) {
 
 function Modal({ title, onClose, children, wide = false }) {
   const panelRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
-    const first = panelRef.current?.querySelector("button, input, select, textarea");
-    first?.focus();
-    const handleKey = (event) => event.key === "Escape" && onClose();
+    const previousFocus = document.activeElement;
+    const panel = panelRef.current;
+    panel?.querySelector("button, input, select, textarea, a[href]")?.focus();
+    const handleKey = (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onCloseRef.current();
+      } else if (event.key === "Tab") {
+        keepModalFocus(event, panelRef.current, document.activeElement);
+      }
+    };
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+      if (previousFocus?.isConnected && typeof previousFocus.focus === "function") previousFocus.focus();
+    };
+  }, []);
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
