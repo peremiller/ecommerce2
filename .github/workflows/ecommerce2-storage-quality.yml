@@ -5,6 +5,7 @@ on:
     paths:
       - 'app/src/App.jsx'
       - 'app/src/storage.mjs'
+      - 'app/src/modalKeyboard.mjs'
       - 'app/src/styles.css'
       - 'app/tests/storage.test.mjs'
       - '.github/workflows/ecommerce2-storage-quality.yml'
@@ -25,7 +26,7 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - name: Install dependencies from lockfile
         run: npm ci --prefix app
-      - name: Run native storage preservation regression tests
+      - name: Run native storage and modal-keyboard regression tests
         run: node --test app/tests/storage.test.mjs
       - name: Build canonical Vite source (review-only, not deployed)
         run: npm run build --prefix app
