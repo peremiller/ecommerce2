@@ -69,3 +69,63 @@ test("valid explicit writes retain original key contract", () => {
   assert.equal(store.read("b20shop.saved"),"[7]");
   assert.equal(store.writes,1);
 });
+
+import { keepModalFocus } from "../src/modalKeyboard.mjs";
+
+function modalFixture(count = 2) {
+  const focusables = Array.from({length: count}, (_, i) => ({
+    id: i,
+    focused: false,
+    focus() { this.focused = true; },
+    getClientRects() { return [1]; },
+    getAttribute() { return null; },
+  }));
+  const panel = {
+    focused: false,
+    querySelectorAll() { return focusables; },
+    contains(node) { return focusables.includes(node); },
+    focus() { this.focused = true; },
+  };
+  const event = (shiftKey = false) => ({
+    key: "Tab", shiftKey, prevented: false, preventDefault() { this.prevented = true; }
+  });
+  return {panel, focusables, event};
+}
+
+test("forward Tab wraps last dialog control to first", () => {
+  const {panel, focusables, event} = modalFixture();
+  const e = event();
+  assert.equal(keepModalFocus(e, panel, focusables[1]), true);
+  assert.equal(e.prevented, true);
+  assert.equal(focusables[0].focused, true);
+});
+
+test("reverse Shift+Tab wraps first dialog control to last", () => {
+  const {panel, focusables, event} = modalFixture();
+  const e = event(true);
+  assert.equal(keepModalFocus(e, panel, focusables[0]), true);
+  assert.equal(e.prevented, true);
+  assert.equal(focusables[1].focused, true);
+});
+
+test("Tab re-enters the dialog from an outside element", () => {
+  const {panel, focusables, event} = modalFixture();
+  const e = event();
+  assert.equal(keepModalFocus(e, panel, {outside: true}), true);
+  assert.equal(focusables[0].focused, true);
+});
+
+test("Tab within the dialog preserves native keyboard order", () => {
+  const {panel, focusables, event} = modalFixture(3);
+  const e = event();
+  assert.equal(keepModalFocus(e, panel, focusables[1]), false);
+  assert.equal(e.prevented, false);
+});
+
+test("dialog with no visible controls keeps focus on its panel", () => {
+  const {panel, event} = modalFixture(0);
+  const e = event();
+  assert.equal(keepModalFocus(e, panel, null), true);
+  assert.equal(e.prevented, true);
+  assert.equal(panel.focused, true);
+});
