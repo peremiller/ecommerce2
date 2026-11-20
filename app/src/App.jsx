@@ -175,7 +175,7 @@ function Modal({ title, onClose, children, wide = false }) {
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className={`modal-panel ${wide ? "modal-panel--wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-title" ref={panelRef}>
+      <section className={`modal-panel ${wide ? "modal-panel--wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabIndex={-1} ref={panelRef}>
         <div className="modal-heading">
           <h2 id="modal-title">{title}</h2>
           <IconButton label="Close" onClick={onClose}>
