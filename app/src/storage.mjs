@@ -28,8 +28,11 @@ export function readStoredValue(key, fallback, storage) {
 export function writeStoredValue(key, value, storage) {
   try {
     const store = storage ?? globalThis.localStorage;
-    store.setItem(key, JSON.stringify(value));
-    return true;
+    const serialized = JSON.stringify(value);
+    if (typeof serialized !== "string") return false;
+    store.setItem(key, serialized);
+    // A storage shim may silently discard writes without throwing. Verify persistence.
+    return store.getItem(key) === serialized;
   } catch {
     return false;
   }
