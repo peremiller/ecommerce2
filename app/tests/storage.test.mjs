@@ -70,6 +70,26 @@ test("valid explicit writes retain original key contract", () => {
   assert.equal(store.writes,1);
 });
 
+
+test("silent storage discard is reported without overwriting existing cart", () => {
+  const prior = '[{"id":1,"quantity":2}]';
+  const store = {
+    getItem() { return prior; },
+    setItem() { /* Some browser storage adapters drop writes without throwing. */ },
+  };
+  assert.equal(writeStoredValue("b20shop.cart", [{id:1,quantity:3}], store),false);
+  assert.equal(store.getItem("b20shop.cart"), prior);
+});
+
+test("unserializable writes report persistence failure without touching storage", () => {
+  const store = storage({"b20shop.account": '{"username":"demo"}'});
+  assert.equal(writeStoredValue("b20shop.account", undefined, store), false);
+  const circular = {}; circular.self = circular;
+  assert.equal(writeStoredValue("b20shop.account", circular, store), false);
+  assert.equal(store.read("b20shop.account"), '{"username":"demo"}');
+  assert.equal(store.writes, 0);
+});
+
 import { keepModalFocus } from "../src/modalKeyboard.mjs";
 
 function modalFixture(count = 2) {
