@@ -37,3 +37,11 @@ export function writeStoredValue(key, value, storage) {
     return false;
   }
 }
+
+// Save a demo order before React clears the cart. A storage failure must not
+// turn an unsaved in-memory order into a misleading completed checkout.
+export function persistDemoOrder(orders, order, storage) {
+  if (!Array.isArray(orders) || !order || typeof order.id !== "string") return null;
+  const nextOrders = [order, ...orders];
+  return writeStoredValue("b20shop.orders", nextOrders, storage) ? nextOrders : null;
+}
