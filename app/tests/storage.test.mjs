@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readStoredValue, writeStoredValue } from "../src/storage.mjs";
+import { readStoredValue, writeStoredValue, persistDemoOrder } from "../src/storage.mjs";
 
 function storage(initial = {}) {
   const values = new Map(Object.entries(initial));
@@ -148,4 +148,32 @@ test("dialog with no visible controls keeps focus on its panel", () => {
   assert.equal(keepModalFocus(e, panel, null), true);
   assert.equal(e.prevented, true);
   assert.equal(panel.focused, true);
+});
+
+
+test("saving a demo order persists both the new and older orders before cart clearing", () => {
+  const previous = {id: "B20-old", items: []};
+  const next = {id: "B20-new", items: [{id: 7, quantity: 1}]};
+  const store = storage({"b20shop.orders": JSON.stringify([previous]), "b20shop.cart": '[{"id":7,"quantity":1}]'});
+  assert.deepEqual(persistDemoOrder([previous], next, store), [next, previous]);
+  assert.deepEqual(JSON.parse(store.read("b20shop.orders")), [next, previous]);
+  assert.equal(store.read("b20shop.cart"), '[{"id":7,"quantity":1}]');
+});
+
+test("failed demo order persistence preserves the old orders and cart", () => {
+  const oldOrders = '[{"id":"B20-old","items":[]}]';
+  const oldCart = '[{"id":7,"quantity":1}]';
+  const store = storage({"b20shop.orders": oldOrders, "b20shop.cart": oldCart});
+  store.setItem = () => { throw Error("QuotaExceededError"); };
+  assert.equal(persistDemoOrder([{id:"B20-old",items:[]}], {id:"B20-new",items:[]}, store), null);
+  assert.equal(store.read("b20shop.orders"), oldOrders);
+  assert.equal(store.read("b20shop.cart"), oldCart);
+});
+
+test("invalid demo order state is rejected without touching saved records", () => {
+  const store = storage({"b20shop.orders": '[{"id":"B20-old"}]'});
+  assert.equal(persistDemoOrder(null, {id:"B20-new"}, store), null);
+  assert.equal(persistDemoOrder([], {id:42}, store), null);
+  assert.equal(store.writes, 0);
+  assert.equal(store.read("b20shop.orders"), '[{"id":"B20-old"}]');
 });
