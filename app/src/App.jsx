@@ -25,7 +25,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 
-import { readStoredValue, writeStoredValue } from "./storage.mjs";
+import { readStoredValue, writeStoredValue, persistDemoOrder } from "./storage.mjs";
 import { keepModalFocus } from "./modalKeyboard.mjs";
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
@@ -303,7 +303,16 @@ export function App() {
       customer: form.get("name"),
       status: "Demo saved",
     };
-    setOrders((current) => [newOrder, ...current]);
+    if (ordersStorageBlocked || cartStorageBlocked) {
+      setToast("Demo order not saved: browser storage is unavailable. Your cart was preserved.");
+      return;
+    }
+    const savedOrders = persistDemoOrder(orders, newOrder);
+    if (!savedOrders) {
+      setToast("Demo order not saved. Your cart was preserved; check browser storage.");
+      return;
+    }
+    setOrders(savedOrders);
     setCart([]);
     setCheckoutOpen(false);
     setCartOpen(false);
@@ -476,7 +485,8 @@ export function App() {
             <div className="cart-checkout">
               <div><span>Subtotal</span><strong>{formatMoney(cartTotal)}</strong></div>
               <p>Demo only: no shipping, fulfillment or real payment.</p>
-              <button disabled={!cartLines.length} onClick={() => setCheckoutOpen(true)}>Demo checkout <LockKey size={19} /></button>
+              {(ordersStorageBlocked || cartStorageBlocked) && <p role="alert">Checkout is unavailable because cart or order storage cannot be saved. Existing records will not be cleared.</p>}
+              <button disabled={!cartLines.length || ordersStorageBlocked || cartStorageBlocked} onClick={() => setCheckoutOpen(true)}>Demo checkout <LockKey size={19} /></button>
             </div>
           </aside>
         </div>
@@ -491,7 +501,8 @@ export function App() {
             <label>Sample delivery address (optional)<textarea name="address" rows="3" autoComplete="off" placeholder="Demo address only" /></label>
             <label>Simulated payment method<select name="payment"><option>Cash on delivery</option><option>Credit or debit card</option><option>Digital wallet</option></select></label>
             <div className="checkout-total"><span>Total</span><strong>{formatMoney(cartTotal)}</strong></div>
-            <button className="modal-primary" type="submit"><CreditCard size={19} /> Save demo order</button>
+            {(ordersStorageBlocked || cartStorageBlocked) && <p role="alert">Browser storage is unavailable. Close checkout to keep the cart in this tab.</p>}
+            <button className="modal-primary" type="submit" disabled={ordersStorageBlocked || cartStorageBlocked}><CreditCard size={19} /> Save demo order</button>
           </form>
         </Modal>
       )}
