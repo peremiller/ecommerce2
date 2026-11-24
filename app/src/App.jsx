@@ -25,6 +25,9 @@ import {
   X,
 } from "@phosphor-icons/react";
 
+import { readStoredValue, writeStoredValue, persistDemoOrder } from "./storage.mjs";
+import { keepModalFocus } from "./modalKeyboard.mjs";
+
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
 
 const products = [
@@ -111,20 +114,17 @@ const formatMoney = (value) =>
   }).format(value);
 
 function useStoredState(key, initialValue) {
-  const [value, setValue] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem(key);
-      return stored ? JSON.parse(stored) : initialValue;
-    } catch {
-      return initialValue;
-    }
-  });
+  const hydrated = useRef(null);
+  if (hydrated.current === null) hydrated.current = readStoredValue(key, initialValue);
+  const [value, setValue] = useState(hydrated.current.value);
+  const [storageBlocked, setStorageBlocked] = useState(hydrated.current.blocked);
 
   useEffect(() => {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  }, [key, value]);
+    if (storageBlocked) return;
+    if (!writeStoredValue(key, value)) setStorageBlocked(true);
+  }, [key, value, storageBlocked]);
 
-  return [value, setValue];
+  return [value, setValue, storageBlocked];
 }
 
 function IconButton({ label, children, className = "", ...props }) {
@@ -151,18 +151,31 @@ function Rating({ product }) {
 
 function Modal({ title, onClose, children, wide = false }) {
   const panelRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
-    const first = panelRef.current?.querySelector("button, input, select, textarea");
-    first?.focus();
-    const handleKey = (event) => event.key === "Escape" && onClose();
+    const previousFocus = document.activeElement;
+    const panel = panelRef.current;
+    panel?.querySelector("button, input, select, textarea, a[href]")?.focus();
+    const handleKey = (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onCloseRef.current();
+      } else if (event.key === "Tab") {
+        keepModalFocus(event, panelRef.current, document.activeElement);
+      }
+    };
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+      if (previousFocus?.isConnected && typeof previousFocus.focus === "function") previousFocus.focus();
+    };
+  }, []);
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className={`modal-panel ${wide ? "modal-panel--wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-title" ref={panelRef}>
+      <section className={`modal-panel ${wide ? "modal-panel--wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabIndex={-1} ref={panelRef}>
         <div className="modal-heading">
           <h2 id="modal-title">{title}</h2>
           <IconButton label="Close" onClick={onClose}>
@@ -214,10 +227,10 @@ export function App() {
   const productsRef = useRef(null);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
-  const [cart, setCart] = useStoredState("b20shop.cart", demoCart);
-  const [saved, setSaved] = useStoredState("b20shop.saved", []);
-  const [orders, setOrders] = useStoredState("b20shop.orders", []);
-  const [account, setAccount] = useStoredState("b20shop.account", null);
+  const [cart, setCart, cartStorageBlocked] = useStoredState("b20shop.cart", demoCart);
+  const [saved, setSaved, savedStorageBlocked] = useStoredState("b20shop.saved", []);
+  const [orders, setOrders, ordersStorageBlocked] = useStoredState("b20shop.orders", []);
+  const [account, setAccount, accountStorageBlocked] = useStoredState("b20shop.account", null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
@@ -242,6 +255,7 @@ export function App() {
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
   const cartTotal = cartLines.reduce((total, line) => total + line.product.price * line.quantity, 0);
   const overlayOpen = Boolean(selectedProduct || cartOpen || ordersOpen || accountOpen || checkoutOpen);
+  const blockedStorageCount = [cartStorageBlocked, savedStorageBlocked, ordersStorageBlocked, accountStorageBlocked].filter(Boolean).length;
 
   useEffect(() => {
     document.body.style.overflow = overlayOpen ? "hidden" : "";
@@ -289,7 +303,16 @@ export function App() {
       customer: form.get("name"),
       status: "Demo saved",
     };
-    setOrders((current) => [newOrder, ...current]);
+    if (ordersStorageBlocked || cartStorageBlocked) {
+      setToast("Demo order not saved: browser storage is unavailable. Your cart was preserved.");
+      return;
+    }
+    const savedOrders = persistDemoOrder(orders, newOrder);
+    if (!savedOrders) {
+      setToast("Demo order not saved. Your cart was preserved; check browser storage.");
+      return;
+    }
+    setOrders(savedOrders);
     setCart([]);
     setCheckoutOpen(false);
     setCartOpen(false);
@@ -313,6 +336,11 @@ export function App() {
 
   return (
     <div className="storefront">
+      {blockedStorageCount > 0 && (
+        <div className="storage-warning" role="alert">
+          Saved data in {blockedStorageCount} browser section{blockedStorageCount === 1 ? "" : "s"} could not be read or saved. Existing browser storage has not been cleared or replaced; changes to affected sections in this tab may not persist. Please preserve your saved data before resetting browser storage.
+        </div>
+      )}
       <header className="site-header">
         <a className="brand" href={import.meta.env.BASE_URL} aria-label="B20 Shop home">
           <img src={`${ASSET_ROOT}/b20-logo.webp`} alt="B20 Shop" />
@@ -457,7 +485,8 @@ export function App() {
             <div className="cart-checkout">
               <div><span>Subtotal</span><strong>{formatMoney(cartTotal)}</strong></div>
               <p>Demo only: no shipping, fulfillment or real payment.</p>
-              <button disabled={!cartLines.length} onClick={() => setCheckoutOpen(true)}>Demo checkout <LockKey size={19} /></button>
+              {(ordersStorageBlocked || cartStorageBlocked) && <p role="alert">Checkout is unavailable because cart or order storage cannot be saved. Existing records will not be cleared.</p>}
+              <button disabled={!cartLines.length || ordersStorageBlocked || cartStorageBlocked} onClick={() => setCheckoutOpen(true)}>Demo checkout <LockKey size={19} /></button>
             </div>
           </aside>
         </div>
@@ -472,7 +501,8 @@ export function App() {
             <label>Sample delivery address (optional)<textarea name="address" rows="3" autoComplete="off" placeholder="Demo address only" /></label>
             <label>Simulated payment method<select name="payment"><option>Cash on delivery</option><option>Credit or debit card</option><option>Digital wallet</option></select></label>
             <div className="checkout-total"><span>Total</span><strong>{formatMoney(cartTotal)}</strong></div>
-            <button className="modal-primary" type="submit"><CreditCard size={19} /> Save demo order</button>
+            {(ordersStorageBlocked || cartStorageBlocked) && <p role="alert">Browser storage is unavailable. Close checkout to keep the cart in this tab.</p>}
+            <button className="modal-primary" type="submit" disabled={ordersStorageBlocked || cartStorageBlocked}><CreditCard size={19} /> Save demo order</button>
           </form>
         </Modal>
       )}
