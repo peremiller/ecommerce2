@@ -177,3 +177,21 @@ test("invalid demo order state is rejected without touching saved records", () =
   assert.equal(store.writes, 0);
   assert.equal(store.read("b20shop.orders"), '[{"id":"B20-old"}]');
 });
+
+
+test("checkout rejects a stale order snapshot without erasing a newer saved order", () => {
+  const original = {id:"B20-old", items:[]};
+  const newer = {id:"B20-other-tab", items:[]};
+  const stored = JSON.stringify([newer, original]);
+  const store = storage({"b20shop.orders":stored});
+  assert.equal(persistDemoOrder([original], {id:"B20-new",items:[]}, store), null);
+  assert.equal(store.read("b20shop.orders"), stored);
+  assert.equal(store.writes, 0);
+});
+
+test("checkout preserves malformed order history rather than replacing it", () => {
+  const store = storage({"b20shop.orders":"{broken"});
+  assert.equal(persistDemoOrder([], {id:"B20-new",items:[]}, store), null);
+  assert.equal(store.read("b20shop.orders"), "{broken");
+  assert.equal(store.writes, 0);
+});
