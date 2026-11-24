@@ -42,6 +42,9 @@ export function writeStoredValue(key, value, storage) {
 // turn an unsaved in-memory order into a misleading completed checkout.
 export function persistDemoOrder(orders, order, storage) {
   if (!Array.isArray(orders) || !order || typeof order.id !== "string") return null;
+  // Reject a stale checkout snapshot rather than erasing orders written by another tab.
+  const current = readStoredValue("b20shop.orders", [], storage);
+  if (current.blocked || JSON.stringify(current.value) !== JSON.stringify(orders)) return null;
   const nextOrders = [order, ...orders];
   return writeStoredValue("b20shop.orders", nextOrders, storage) ? nextOrders : null;
 }
